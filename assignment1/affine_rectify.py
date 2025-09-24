@@ -114,25 +114,6 @@ def main():
         raise FileNotFoundError(args.img)
     h, w = img.shape[:2]
 
-    '''
-    # get 16 points (x,y)
-    if args.interactive:
-        print("\nClick 16 points in order:")
-        print("Lines are (0,1),(2,3),(4,5),(6,7),(8,9),(10,11),(12,13),(14,15).")
-        print("Consecutive PAIRS of lines are parallel: (0,1)&(2,3), (4,5)&(6,7), (8,9)&(10,11), (12,13)&(14,15).")
-        clicks = annotate(args.img)  # TA helper returns [x,y,1] entries
-        pts = np.array(clicks, dtype=float)[:,:2]
-        if pts.shape != (16,2):
-            raise ValueError(f"Need exactly 16 clicks; got {pts.shape[0]}")
-    else:
-        # load from npy
-        with open(args.ann, "rb") as f:
-            ann = np.load(f, allow_pickle=True).item()
-        if args.key is None:
-            raise ValueError("Provide --key when using --ann")
-        pts = np.array(ann[args.key], dtype=float)  # (16,2)
-    '''
-
     # --- get 16 points (x,y) ---
     if args.interactive:
         print("\nClick 16 points in order:")
@@ -184,6 +165,7 @@ def main():
 
     # rectifier
     H = build_affine_rectifier(l_inf)
+    np.save(os.path.join(args.outdir, "H_aff.npy"), H)
 
     # warp with TA helper (image); replicate its translation to warp points for drawing
     rect = MyWarp(img, H)  # TA helper
@@ -206,6 +188,7 @@ def main():
     pts_2d   = pts.reshape(-1, 1, 2).astype(np.float64)
     pts_rect = cv2.perspectiveTransform(pts_2d, M).reshape(-1, 2)
     cv2.imwrite(os.path.join(args.outdir, "02_rectified.png"), rect)
+    np.save(os.path.join(args.outdir, "pts_rect.npy"), pts_rect.astype(np.float32))
 
     # 4) RECTIFIED image — draw ONLY the lines used to compute H (compute groups)
     vis_rect_compute = rect.copy()
